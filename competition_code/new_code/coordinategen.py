@@ -1,9 +1,9 @@
 import numpy as np
 
 # Adjustable variables
-N = 37
-f = 0.00
-A = 0.0
+N = 35
+f = 0.0022
+A = 0.1
 x_trans = 296
 y_trans = 913
 

@@ -53,19 +53,18 @@ class RoarCompetitionSolution:
 
         startInd = [198, 478, 547, 691, 803, 884, 1287, 1508, 1854, 1968, 2264, 2662, 2770]
         endInd =  [198, 520, 547, 691, 803, 884, 1287, 1508, 1854, 1968, 2264, 2662, 2770]
-        startInd2 = 479
-        endInd2 = 518
+        startInd2 = 480
+        endInd2 = 515
         startInd_8 = 1800
         endInd_8 = 2006
         startInd_12 = 2586
-        # endInd = 1967
-        # endInd = startInd+len(NEW_WAYPOINTS)
-        # self.maneuverable_waypoints = \
-        #     maneuverable_waypoints[:startInd_8] + SEC_8_WAYPOINTS \
-        #         + maneuverable_waypoints[endInd_8:] 
+        
+            # maneuverable_waypoints[:startInd2] + SEC_2_WAYPOINTS \
+            # + maneuverable_waypoints[endInd2:startInd_8] + SEC_8_WAYPOINTS \
+            # + maneuverable_waypoints[endInd_8:startInd_12] \
+            # + SEC_12_WAYPOINTS
         self.maneuverable_waypoints = \
-            maneuverable_waypoints[:startInd2] + SEC_2_WAYPOINTS \
-            + maneuverable_waypoints[endInd2:startInd_8] + SEC_8_WAYPOINTS \
+            maneuverable_waypoints[:startInd_8] + SEC_8_WAYPOINTS \
             + maneuverable_waypoints[endInd_8:startInd_12] \
             + SEC_12_WAYPOINTS
         # self.maneuverable_waypoints = self.modified_points(maneuverable_waypoints)
@@ -826,42 +825,40 @@ class ThrottleController():
 # https://community.wolfram.com/groups/-/m/t/2963938 
 
 SEC_2_WAYPOINTS = [
-    new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
-new_x_y(298.0, 913.0),
+    new_x_y(297.99000833055607, 913.1996668332937),
+new_x_y(297.99000833055607, 913.1996668332937),
+new_x_y(297.9895642480589, 913.2040443648957),
+new_x_y(297.98864719679943, 913.2127964441944),
+new_x_y(297.98719943788535, 913.2259167857158),
+new_x_y(297.9851344519646, 913.2433951676251),
+new_x_y(297.9823370596902, 913.2652164809712),
+new_x_y(297.97866360510835, 913.2913594649561),
+new_x_y(297.97394222140633, 913.3217951313329),
+new_x_y(297.96797320320326, 913.3564848825322),
+new_x_y(297.9605295142114, 913.3953783300918),
+new_x_y(297.9513574635904, 913.4384108225055),
+new_x_y(297.9401775886105, 913.4855006948023),
+new_x_y(297.9266857852456, 913.5365462560978),
+new_x_y(297.91055473195587, 913.591422536095),
+new_x_y(297.8914356550657, 913.6499778171185),
+new_x_y(297.86896048667563, 913.7120299847936),
+new_x_y(297.842744467808, 913.7773627379563),
+new_x_y(297.81238925030283, 913.8457217068201),
+new_x_y(297.77748655065517, 913.9168105378103),
+new_x_y(297.7376224073061, 913.990287013763),
+new_x_y(297.6923820896323, 914.0657592892824),
+new_x_y(297.6413557017748, 914.14278233284),
+new_x_y(297.5841445172541, 914.2208546794986),
+new_x_y(297.5203680707758, 914.2994156107133),
+new_x_y(297.44967202148183, 914.3778428902211),
+new_x_y(297.37173678691346, 914.4554511971991),
+new_x_y(297.2862869289107, 914.5314914092196),
+new_x_y(297.19310125140356, 914.605150897548),
+new_x_y(297.0920235454524, 914.6755550054169),
+new_x_y(296.9829738889185, 914.7417698854052),
+new_x_y(296.8659603768622, 914.8028068742117),
+new_x_y(296.7410911243443, 914.8576285811265),
+new_x_y(296.6085863460723, 914.9051568595196)
 ]
 
 SEC_8_WAYPOINTS = [
