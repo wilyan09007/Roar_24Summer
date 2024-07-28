@@ -64,9 +64,15 @@ class RoarCompetitionSolution:
             # + maneuverable_waypoints[endInd_8:startInd_12] \
             # + SEC_12_WAYPOINTS
         self.maneuverable_waypoints = \
-            maneuverable_waypoints[:startInd_8] + SEC_8_WAYPOINTS \
+        maneuverable_waypoints[:startInd2] + SEC_2_WAYPOINTS \
+            + maneuverable_waypoints[endInd2:startInd_8] + SEC_8_WAYPOINTS \
             + maneuverable_waypoints[endInd_8:startInd_12] \
             + SEC_12_WAYPOINTS
+        
+        with open('out.txt', 'w') as f:
+            for i in self.maneuverable_waypoints:
+                print(f"{i.location[0]}, {i.location[1]}", file=f) # print current waypoints
+        
         # self.maneuverable_waypoints = self.modified_points(maneuverable_waypoints)
         self.vehicle = vehicle
         self.camera_sensor = camera_sensor
