@@ -260,9 +260,9 @@ class RoarCompetitionSolution:
             self.current_waypoint_idx, waypoints_for_throttle, vehicle_location, current_speed_kmh, self.current_section)
 
         control = {
-            "throttle": np.clip(throttle, 0.0, 1.0),
+            "throttle": np.clip(throttle*1.5, 0.0, 1.0),
             "steer": np.clip(steer_control, -1.0, 1.0),
-            "brake": np.clip(brake, 0.0, 1.0),
+            "brake": np.clip(brake*1.5, 0.0, 1.0),
             "hand_brake": 0.0,
             "reverse": 0,
             "target_gear": gear
@@ -781,7 +781,7 @@ class ThrottleController():
         #self.section_indeces = [198, 438, 547, 691, 803, 884, 1287, 1508, 1854, 1968, 2264, 2662, 2770]
         #old section indeces = [0, 277, 554, 831, 1108, 1662, 1939, 2216, 2493]
         mu = 1.0
-        if current_section == 0:
+        if current_section == 0: #CHNAGE TO ONLY SET SPEED FOR TURNS, OTHERWISE MAX SPEED, SO CHANGE SECTION DEFINITIONS, ALSO GO CHANGE ACCELERATION LIMIT BY SECTION, change braking style if possible
             mu = 10
         if current_section == 1:
             mu = 2.3
