@@ -174,24 +174,37 @@ async def evaluate_solution(
     )
     rule = RoarCompetitionRule(waypoints,vehicle,world) # 3 laps
 
-    import transforms3d as tr3d
+    for _ in range(20):
+        await world.step()
+    
+    rule.initialize_race()
+    # vehicle.close()
+    # exit()
 
-    waypoint_list : List[roar_py_interface.RoarPyWaypoint] = []
+    # Timer starts here 
+    start_time = world.last_tick_elapsed_seconds
+    current_time = start_time
+    await vehicle.receive_observation()
+    await solution.initialize()
+
+    import transforms3d as tr3d #-----------------------------------------------------------------------------------------------------------------------------------------
+
+    waypoint_list : List[roar_py_interface.RoarPyWaypoint] = solution.maneuverable_waypoints
     trace_waypoint_laneid = 1
     # print("LaneIDS: ", world.comprehensive_waypoints.keys())
-    for lane_id in [0, 1]:
-        lane_waypoints = world.comprehensive_waypoints[lane_id]
-        assert len(lane_waypoints) % 2 == 0
-        for i in range(len(lane_waypoints)//2):
-            first_waypoint = lane_waypoints[2*i]
-            second_waypoint = lane_waypoints[2*i+1]
-            real_waypoint = roar_py_interface.RoarPyWaypoint.from_line_representation(
-                first_waypoint.location,
-                second_waypoint.location,
-                first_waypoint.roll_pitch_yaw
-            )
-            # print(real_waypoint)
-            waypoint_list.append(real_waypoint)
+    # for lane_id in [0, 1]:
+    #     lane_waypoints = world.comprehensive_waypoints[lane_id]
+    #     assert len(lane_waypoints) % 2 == 0
+    #     for i in range(len(lane_waypoints)//2):
+    #         first_waypoint = lane_waypoints[2*i]
+    #         second_waypoint = lane_waypoints[2*i+1]
+    #         real_waypoint = roar_py_interface.RoarPyWaypoint.from_line_representation(
+    #             first_waypoint.location,
+    #             second_waypoint.location,
+    #             first_waypoint.roll_pitch_yaw
+    #         )
+    #         # print(real_waypoint)
+    #         waypoint_list.append(real_waypoint)
 
 
     # roar_py_instance.close()
@@ -208,20 +221,6 @@ async def evaluate_solution(
             color=carla.Color(0,255,0),
             life_time=-1.0
         )
-
-    for _ in range(20):
-        await world.step()
-    
-    rule.initialize_race()
-    # vehicle.close()
-    # exit()
-
-    # Timer starts here 
-    start_time = world.last_tick_elapsed_seconds
-    current_time = start_time
-    await vehicle.receive_observation()
-    await solution.initialize()
-
     
     while True:
         # terminate if time out
