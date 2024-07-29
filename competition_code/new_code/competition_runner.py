@@ -216,8 +216,8 @@ async def evaluate_solution(
         world.carla_world.debug.draw_arrow(
             roar_py_carla.location_to_carla(origin_loc),
             roar_py_carla.location_to_carla(forward_loc),
-            thickness=0.1,
-            arrow_size=0.1,
+            thickness=0.5,
+            arrow_size=0.5,
             color=carla.Color(0,255,0),
             life_time=-1.0
         )
