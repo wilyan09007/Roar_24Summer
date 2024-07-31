@@ -2,93 +2,94 @@ import numpy as np
 from scipy.interpolate import splprep, splev
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+import sys
 
 def calculate_curvature(points):
     dx = np.gradient(points[:, 0])
     dy = np.gradient(points[:, 1])
     ddx = np.gradient(dx)
     ddy = np.gradient(dy)
-    curvature = np.abs(dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5
+    curvature = (dx * ddy - dy * ddx) / (dx**2 + dy**2)**1.5
     return curvature
 
-def optimize_racing_line(center_points, track_width, safety_margin, num_samples=2000):
-    # Convert list of tuples to numpy array
+def optimize_racing_line(center_points, track_width, safety_margin, turn_radius_threshold, turn_aggression=1, num_samples=1000):
     track = np.array(center_points)
+    num_samples = max(num_samples, 20)
     
-    # Fit a spline to the center line
     tck, u = splprep(track.T, s=0, per=1)
-    
-    # Generate a smaller number of points along the spline for optimization
     t = np.linspace(0, 1, num_samples)
     center_line = np.array(splev(t, tck)).T
     
-    # Calculate the curvature of the center line
     curvature = calculate_curvature(center_line)
     
-    # Calculate the normal vectors to the center line
     tangent = np.gradient(center_line, axis=0)
     normal = np.array([-tangent[:, 1], tangent[:, 0]]).T
     normal /= np.linalg.norm(normal, axis=1)[:, np.newaxis]
     
-    # Define the racing line strategy based on curvature
-    curvature_threshold = np.percentile(curvature, 50)
-    turn_entry_distance = num_samples // 5 # Adjust this value to change how early we move to the outside
+    straight_threshold = np.percentile(np.abs(curvature), 41)
+    slight_turn_threshold = np.percentile(np.abs(curvature), 85)
+    sharp_turn_threshold = np.percentile(np.abs(curvature), 100)
+    
+    turn_entry_distance = max(int(num_samples // 100), 1)
 
+    max_offset = turn_aggression * (track_width/2 - safety_margin)
+    
     ideal_offset = np.zeros(num_samples)
+    is_major_turn = np.zeros(num_samples, dtype=bool)
     for i in range(num_samples):
-        if curvature[i] > curvature_threshold:
-            # Inside of turns
-            ideal_offset[i] = -0.8 * (track_width/2 - safety_margin)
+        if abs(curvature[i]) <= straight_threshold:
+            ideal_offset[i] = 0
+        elif abs(curvature[i]) <= slight_turn_threshold:
+            ideal_offset[i] = np.sign(curvature[i]) * max_offset * 0.3
+        elif abs(curvature[i]) <= sharp_turn_threshold:
+            ideal_offset[i] = np.sign(curvature[i]) * max_offset
+            is_major_turn[i] = True
         else:
-            # Check if we're approaching a turn
-            upcoming_curvature = curvature[i:i+turn_entry_distance]
-            if np.any(upcoming_curvature > curvature_threshold):
-                # Outside before turns
-                ideal_offset[i] = 0.8 * (track_width/2 - safety_margin)
-            else:
-                # Neutral position on straights
-                ideal_offset[i] = 0
+            ideal_offset[i] = np.sign(curvature[i]) * max_offset
+            is_major_turn[i] = True
+        
+        upcoming_curvature = curvature[i:i+turn_entry_distance]
+        if np.any(np.abs(upcoming_curvature) > slight_turn_threshold ) and not curvature[i] > slight_turn_threshold :
+            ideal_offset[i] = -np.sign(np.mean(upcoming_curvature)) * max_offset
     
-    # Smooth the ideal offset
-    smooth_ideal_offset = np.convolve(ideal_offset, np.ones(num_samples//10)/float(num_samples//10), mode='same')
+    smoothing_window = max(num_samples // 10, 1)
+    smooth_ideal_offset = np.convolve(ideal_offset, np.ones(smoothing_window)/smoothing_window, mode='same')
     
-    # Optimization function
     def objective(offsets):
         racing_line = center_line + normal * offsets[:, np.newaxis]
         distances = np.linalg.norm(np.diff(racing_line, axis=0), axis=1)
         smoothness = np.sum(np.diff(offsets)**2)
         deviation_from_ideal = np.sum((offsets - smooth_ideal_offset)**2)
-        return np.sum(distances) + 0.1 * smoothness + 0.2 * deviation_from_ideal
+        return np.sum(distances) + 0.1 * smoothness + 0.3 * deviation_from_ideal
 
-    # Constraints to keep the racing line within track limits, accounting for safety margin
     safe_width = (track_width / 2) - safety_margin
     cons = {'type': 'ineq', 'fun': lambda x: safe_width - np.abs(x)}
     
-    # Initial guess: smoothed ideal offset
     x0 = smooth_ideal_offset
     
-    # Optimize
     res = minimize(objective, x0, method='SLSQP', constraints=cons, options={'maxiter': 1000})
     
-    # Calculate the optimized racing line
     optimized_line = center_line + normal * res.x[:, np.newaxis]
     
-    return center_line, optimized_line
+    return center_line, optimized_line, is_major_turn, curvature
 
-def plot_tracks(center_line, optimized_line, track_width, safety_margin):
+def plot_tracks(center_line, optimized_line, is_major_turn, curvature, track_width, safety_margin):
     plt.figure(figsize=(12, 8))
     
-    # Plot center line
     plt.plot(center_line[:, 0], center_line[:, 1], 'b-', label='Center Line')
-    
-    # Plot optimized racing line
     plt.plot(optimized_line[:, 0], optimized_line[:, 1], 'r-', label='Optimized Racing Line')
     
-    # Plot track boundaries and safety margins
+    major_turn_mask = is_major_turn
+    left_turns = curvature > 0
+    right_turns = curvature < 0
+    
+    plt.plot(optimized_line[major_turn_mask & left_turns, 0], optimized_line[major_turn_mask & left_turns, 1], 'g-', linewidth=2, label='Major Left Turns')
+    plt.plot(optimized_line[major_turn_mask & right_turns, 0], optimized_line[major_turn_mask & right_turns, 1], 'm-', linewidth=2, label='Major Right Turns')
+    
     num_boundary_points = len(center_line)
     track_normal = np.array([-np.diff(center_line[:, 1]), np.diff(center_line[:, 0])]).T
     track_normal /= np.linalg.norm(track_normal, axis=1)[:, np.newaxis]
-    track_normal = np.vstack([track_normal, track_normal[0]])  # Close the loop
+    track_normal = np.vstack([track_normal, track_normal[0]])
     
     inner_boundary = center_line - track_normal * track_width/2
     outer_boundary = center_line + track_normal * track_width/2
@@ -97,10 +98,10 @@ def plot_tracks(center_line, optimized_line, track_width, safety_margin):
     
     plt.plot(inner_boundary[:, 0], inner_boundary[:, 1], 'k--', label='Track Boundaries')
     plt.plot(outer_boundary[:, 0], outer_boundary[:, 1], 'k--')
-    plt.plot(inner_safety[:, 0], inner_safety[:, 1], 'g--', label='Safety Margin')
-    plt.plot(outer_safety[:, 0], outer_safety[:, 1], 'g--')
+    plt.plot(inner_safety[:, 0], inner_safety[:, 1], 'y--', label='Safety Margin')
+    plt.plot(outer_safety[:, 0], outer_safety[:, 1], 'y--')
     
-    plt.title('Race Track Optimization with Safety Margin')
+    plt.title('Race Track Optimization with Turn Direction')
     plt.xlabel('X coordinate')
     plt.ylabel('Y coordinate')
     plt.legend()
@@ -108,6 +109,40 @@ def plot_tracks(center_line, optimized_line, track_width, safety_margin):
     plt.grid(True)
     plt.show()
 
+
+# # The rest of the code (plot_tracks function and example usage) remains the same
+
+# def plot_tracks(center_line, optimized_line, track_width, safety_margin):
+#     plt.figure(figsize=(12, 8))
+    
+#     plt.plot(center_line[:, 0], center_line[:, 1], 'b-', label='Center Line')
+#     plt.plot(optimized_line[:, 0], optimized_line[:, 1], 'r-', label='Optimized Racing Line')
+    
+#     # major_turn_mask = is_major_turn
+#     # plt.plot(optimized_line[major_turn_mask, 0], optimized_line[major_turn_mask, 1], 'g-', linewidth=2, label='Major Turns')
+    
+#     num_boundary_points = len(center_line)
+#     track_normal = np.array([-np.diff(center_line[:, 1]), np.diff(center_line[:, 0])]).T
+#     track_normal /= np.linalg.norm(track_normal, axis=1)[:, np.newaxis]
+#     track_normal = np.vstack([track_normal, track_normal[0]])
+    
+#     inner_boundary = center_line - track_normal * track_width/2
+#     outer_boundary = center_line + track_normal * track_width/2
+#     inner_safety = center_line - track_normal * (track_width/2 - safety_margin)
+#     outer_safety = center_line + track_normal * (track_width/2 - safety_margin)
+    
+#     plt.plot(inner_boundary[:, 0], inner_boundary[:, 1], 'k--', label='Track Boundaries')
+#     plt.plot(outer_boundary[:, 0], outer_boundary[:, 1], 'k--')
+#     plt.plot(inner_safety[:, 0], inner_safety[:, 1], 'y--', label='Safety Margin')
+#     plt.plot(outer_safety[:, 0], outer_safety[:, 1], 'y--')
+    
+#     plt.title('Race Track Optimization for Major Turns')
+#     plt.xlabel('X coordinate')
+#     plt.ylabel('Y coordinate')
+#     plt.legend()
+#     plt.axis('equal')
+#     plt.grid(True)
+#     plt.show()
 # Example usage
 # Assuming center_points is your list of 3000 points
 center_points = [
@@ -2885,16 +2920,34 @@ center_points = [
 [-282.41839599609375, 387.1232604980469],
 [-283.0381774902344, 389.0247802734375]
 ]
-track_width = 10
-safety_margin = 1  # 1 unit safety margin on each side
 
-center_line, optimized_line = optimize_racing_line(center_points, track_width, safety_margin)
-plot_tracks(center_line, optimized_line, track_width, safety_margin)
+
+# Example usage
+# Assume center_points is defined here
+# center_points = [(x1, y1), (x2, y2), ..., (x3000, y3000)]
+
+track_width = 10
+safety_margin = 1
+turn_aggression = 5
+turn_radius_threshold = 20  # Adjust this value to define what constitutes a "major" turn
+
+center_line, optimized_line, is_major_turn, curvature = optimize_racing_line(center_points, track_width, safety_margin, turn_radius_threshold, turn_aggression)
+plot_tracks(center_line, optimized_line, is_major_turn, curvature, track_width, safety_margin)
 
 print("Number of points in optimized racing line:", len(optimized_line))
 print("First few optimized racing line points:")
+
+import sys
+
+orig_stdout = sys.stdout
+f = open('out.txt', 'w')
+sys.stdout = f
+
 for point in optimized_line:
-    print(f"({point[0]:.2f}, {point[1]:.2f})")
+    print(f"new_x_y({point[0]:.2f}, {point[1]:.2f}),", end=" ", file=f)
+
+sys.stdout = orig_stdout
+f.close()
 # print("...")
 # print("Last few optimized racing line points:")
 # for point in optimized_line[-5:]:
