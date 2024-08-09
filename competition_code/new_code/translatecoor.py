@@ -21,7 +21,7 @@ def convert_coordinates(input_filename, output_filename):
         # Remove any leading/trailing whitespace and split the line by comma
         x, y = line.strip().split(',')
         # Format the coordinates and add them to the list
-        formatted_lines.append(f"[{x.strip()}, {y.strip()}],")
+        formatted_lines.append(f"({x.strip()}, {y.strip()}),")
 
     # Write the formatted lines to the output file
     with open(output_filename, 'w') as outfile:
