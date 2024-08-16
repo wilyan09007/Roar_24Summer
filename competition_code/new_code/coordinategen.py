@@ -8,24 +8,24 @@ precision = 100
 mp.dps = precision
 
 # Adjustable variables
-N = 18
-f = 0.01200000000
+N = 25
+f = 0.0020000000000
 degree_offset = 0.996802677962
-A = degree_offset * -0.07000000000000
-x_trans = -305
-y_trans = 332
+A = degree_offset * -2.1300000000000000000
+x_trans = -50
+y_trans = -44
 
 # Function to calculate coordinates
 def calculate_coordinates(N, f, A, x_trans, y_trans):
     x3 = []
     x3.append(0)
     for i in range(3, N+1):
-        x3.append((1.9 * mp.cos(np.sum([f * j for j in range(1, i-2)])) + x3[i-3])+0.0211316456368*2.5)
+        x3.append((2 * mp.cos(np.sum([f * j for j in range(1, i-2)])) + x3[i-3])+0.0211316456368*2.5)
         # print(x3[i-3])
     y3 = []
     y3.append(0)
     for i in range(3, N+1):
-        y3.append(3  * mp.sin(np.sum([f * j for j in range(1, i-2)])) + y3[i-3])
+        y3.append(2  * mp.sin(np.sum([f * j for j in range(1, i-2)])) + y3[i-3])
         # print(y3[i-3])
     
     x2 = [x * mp.cos(A) - y * mp.sin(A) + x_trans for x, y in zip(x3, y3)]
