@@ -60,7 +60,7 @@ def optimize_racing_line(center_points, track_width, safety_margin, turn_radius_
         distances = np.linalg.norm(np.diff(racing_line, axis=0), axis=1)
         smoothness = np.sum(np.diff(offsets)**2)
         deviation_from_ideal = np.sum((offsets - smooth_ideal_offset)**2)
-        return np.sum(distances) + 0.05 * smoothness + 0.3 * deviation_from_ideal
+        return np.sum(distances) + 0.1 * smoothness + 0.3 * deviation_from_ideal
 
     safe_width = (track_width / 2) - safety_margin
     cons = {'type': 'ineq', 'fun': lambda x: safe_width - np.abs(x)}

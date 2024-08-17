@@ -1,3 +1,6 @@
+'''
+euler spirals, used to create points after desmos model
+'''
 import numpy as np
 from decimal import Decimal, getcontext
 

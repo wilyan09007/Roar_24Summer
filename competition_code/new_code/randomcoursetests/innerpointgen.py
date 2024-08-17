@@ -1,64 +1,81 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Function to calculate the angle between three points
-def angle_between(p1, p2, p3):
-    v1 = np.array(p2) - np.array(p1)
-    v2 = np.array(p3) - np.array(p2)
-    dot_product = np.dot(v1, v2)
-    norm_v1 = np.linalg.norm(v1)
-    norm_v2 = np.linalg.norm(v2)
-    return np.arccos(dot_product / (norm_v1 * norm_v2 + 0.00000000001))
-
-# Function to detect if a turn is coming
-def look_ahead(points, index, threshold_angle=np.pi/8):
-    if index <= 0 or index >= len(points)-11:
-        return False
-    angle = angle_between(points[index], points[index+5], points[index + 10])
-    return angle > threshold_angle
-
-# Function to edit points for optimal racing line
-def edit_points(points, index, swing_factor=1.2, cut_factor=0.8):
-    if index <= 0 or index >= len(points) - 10:
-        return points
+def calculate_inner_line_points(center_points, track_width, margin):
+    """
+    Calculate the inner line points of the track.
     
-    # Swing out before the turn
-    swing_out_point = points[index + 5] + (points[index + 10] - points[index+5]) * swing_factor
-    # Cut into the corner
-    cut_in_point = points[index] + (points[index + 5] - points[index]) * cut_factor
+    Parameters:
+    - center_points: List of [x, y] coordinates of the center points
+    - track_width: Width of the track
+    - margin: Margin to the edge
     
-    new_points = np.copy(points)
-    new_points[index + 5] = swing_out_point
-    new_points[index] = cut_in_point
+    Returns:
+    - inner_line_points: List of [x, y] coordinates of the inner track line points
+    """
     
-    return new_points
+    def perpendicular_vector(v):
+        """Return a perpendicular vector to the given 2D vector."""
+        return np.array([-v[1], v[0]])
+    
+    def normalize(v):
+        """Normalize a vector."""
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return v
+        return v / norm
+    
+    inner_line_points = []
+    
+    for i in range(len(center_points) - 1):
+        p1 = np.array(center_points[i])
+        p2 = np.array(center_points[i + 1])
+        
+        # Direction vector from p1 to p2
+        direction = p2 - p1
+        direction = normalize(direction)
+        
+        # Perpendicular vector
+        perp = perpendicular_vector(direction)
+        perp = normalize(perp)
+        
+        # Calculate the offset
+        offset = (track_width / 2 + margin) * perp
+        
+        # Add the offset to p1 and p2
+        inner_line_points.append(list(p1 + offset))
+        inner_line_points.append(list(p2 + offset))
+    
+    # Ensure the inner line points form a continuous line
+    inner_line_points = np.array(inner_line_points)
+    
+    return inner_line_points
 
-# Function to optimize the racing line
-def optimize_racing_line(points, swing_factor=1.5, cut_factor=0.8):
-    new_points = np.copy(points)
-    for i in range(1, len(points) - 1):
-        if look_ahead(points, i):
-            new_points = edit_points(new_points, i, swing_factor, cut_factor)
-    return new_points
-
-def plot_points():
-    # Example usage
-    optimal_points = optimize_racing_line(points)
-
-    # Plotting the original and optimized racing line
-    plt.plot(points[:, 0], points[:, 1], label='Centerline', marker='o')
-    plt.plot(optimal_points[:, 0], optimal_points[:, 1], label='Optimized Racing Line')
-    plt.scatter(points[:, 0], points[:, 1], color='blue', label='Original Points')
+def plot_track(center_points, inner_line_points):
+    """
+    Plot the track and its inner line points.
+    
+    Parameters:
+    - center_points: List of [x, y] coordinates of the center points
+    - inner_line_points: List of [x, y] coordinates of the inner track line points
+    """
+    
+    center_points = np.array(center_points)
+    
+    plt.figure(figsize=(12, 8))
+    plt.plot(center_points[:, 0], center_points[:, 1], label='Center Line', color='blue')
+    plt.plot(inner_line_points[:, 0], inner_line_points[:, 1], label='Inner Line', color='red')
+    plt.scatter(center_points[:, 0], center_points[:, 1], color='blue')
+    plt.scatter(inner_line_points[:, 0], inner_line_points[:, 1], color='red')
+    plt.xlabel('X Coordinate')
+    plt.ylabel('Y Coordinate')
     plt.legend()
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.title('Racing Line Optimization')
+    plt.title('Track and Inner Line')
+    plt.grid(True)
     plt.show()
 
-# Sample usage
-points = np.array([
-[-283.79998779296875, 391.6999816894531],
+# Example usage
+center_points = [[-283.79998779296875, 391.6999816894531],
 [-284.6494140625, 393.758056640625],
 [-289.4931335449219, 407.9544677734375],
 [-290.13897705078125, 409.8473205566406],
@@ -2830,7 +2847,19 @@ points = np.array([
 [-281.25653076171875, 383.2958679199219],
 [-281.824462890625, 385.2135009765625],
 [-282.41839599609375, 387.1232604980469],
-[-283.0381774902344, 389.0247802734375]
-])
+[-283.0381774902344, 389.0247802734375],
+]
 
-plot_points()
+track_width = 3  # Example track width
+margin = -4       # Example margin to the edge
+
+inner_line_points = calculate_inner_line_points(center_points, track_width, margin)
+import sys
+np.set_printoptions(threshold=100, precision=2)
+np.set_printoptions(suppress=True)
+import random
+for i in range(0,1000,2):
+    if(random.randint(1,10)<=8):
+        print("new_x_y(",inner_line_points[i][0],",",inner_line_points[i][1],"),")
+# print(f"[{i[0]}, {i[1]}]" for i in inner_line_points)
+plot_track(center_points, inner_line_points)
